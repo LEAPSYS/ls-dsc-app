@@ -1,0 +1,19 @@
+{
+  "DataSourceConfig": {
+    "ConnectionDetails": {
+      "Connection_String": "Data Source=10.10.33.35\\KS;Initial Catalog=TESTKS;User id=sa;Password=KS@2023",
+      "providerName": "FIELD NOT IN USE"
+    },
+    "LoginDetails": {
+      "DatabaseName": "FIELD NOT IN USE",
+      "password": "KS@2023",
+      "ServerName": "10.10.33.35\\KS",
+      "userId": "sa"
+    },
+    "reportInformation": {
+      "DataQuery": "SELECT TOP 5 * FROM KS.DBO.PENDING_DSC",
+      "crystalReportLocation": "FIELD NOT IN USE",
+      "exportLocation": "FIELD NOT IN USE"
+    }
+  }
+}

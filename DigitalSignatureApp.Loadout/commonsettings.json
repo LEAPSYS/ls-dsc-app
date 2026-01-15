@@ -1,0 +1,34 @@
+{
+  "CommonService": {
+    "TurnOnExceptionLog": true,
+    "StepByStepEvaluation": true,
+    "WriteAtEverySuccessOrFail": true,
+    "DataSource": "SQL",
+    "ReportGenerationSettings": {
+      "DSCService": true,
+      "MailService": false,
+      "MailServiceDetails": {
+        "FromFields": [
+          {
+            "FromName": "",
+            "FromAddress": ""
+          }
+        ],
+        "ToFields": [
+          {
+            "ToName": "",
+            "ToAddress": ""
+          }
+        ],
+        "CCFields": null,
+        "BCCFields": null,
+        "Subject": "Test",
+        "Message": "",
+        "SmtpServer": "smtp.gmail.com",
+        "SmtpPort": 587,
+        "SmtpUsername": "",
+        "SmtpPassword": ""
+      }
+    }
+  }
+}

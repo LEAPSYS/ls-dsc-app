@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DigitalSignatureApp.Loadout.DSCViewModel
+{
+    public class DSCViewModel
+    {
+        public string CREXPORT { get; set; }
+        public string Type { get; set; }
+        public string DocNum { get; set; }
+        public string Database { get; set; }
+        public string DocEntry { get; set; }
+        public string TBName { get; set; }
+        public string Auth_Signatory { get; set; }
+        public string CRPath { get; set; }
+        public bool DSCShow { get; set; }
+        public string AuthorizedSignatory { get; set; }
+        public DSCViewModel()
+        {
+            CREXPORT = string.Empty;
+            Type = string.Empty;
+            DocNum = string.Empty;
+            Database = string.Empty;
+            DocEntry = string.Empty;
+            TBName = string.Empty;
+            Auth_Signatory = string.Empty;
+            CRPath = string.Empty;
+            AuthorizedSignatory = string.Empty;
+        }
+
+    }
+}
