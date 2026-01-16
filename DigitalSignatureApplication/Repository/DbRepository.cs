@@ -17,11 +17,11 @@ namespace DigitalSignatureApplication.Repository
             _context = new DapperContext();
             _spQuery = "DSC_SP";
         }
-        public async Task<IEnumerable<DSCViewModel>> PopulateView()
+        public async Task<IEnumerable<PendingViewModel>> GetPendingFromView()
         {
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("MethodName", "View", DbType.String);
-            return await GetQueryResult<DSCViewModel>(parameters);
+            return await GetQueryResult<PendingViewModel>(parameters);
         }
 
         public async Task<IEnumerable<OutPathViewModel>> GetOutPath(string DocEntry, string DocType, string DatabaseName)

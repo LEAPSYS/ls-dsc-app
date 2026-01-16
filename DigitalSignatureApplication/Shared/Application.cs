@@ -6,17 +6,17 @@ namespace DigitalSignatureApplication.Shared
 {
     public class Application
     {
-        private readonly BulkSigningService bulkDSC;
-        private readonly CrystalReportService crystalReport;
-        public Application(BulkSigningService bulkDSC, CrystalReportService NewReport)
+        private readonly BulkSigningService bulkSigningService;
+        private readonly CrystalReportService crystalReportService;
+        public Application(BulkSigningService bsService, CrystalReportService crService)
         {
-            crystalReport = NewReport;
-            this.bulkDSC = bulkDSC;
+            crystalReportService = crService;
+            this.bulkSigningService = bsService;
         }
         public async Task Sequence()
         {
-            _ = await crystalReport.Report();
-            await this.bulkDSC.ManualDSC();
+            _ = await crystalReportService.GetGeneratedReportList();
+            await this.bulkSigningService.ManualDSC();
         }
     }
 }

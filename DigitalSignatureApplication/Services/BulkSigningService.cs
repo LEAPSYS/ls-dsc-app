@@ -2,6 +2,7 @@
 using DigitalSignatureApplication.Models;
 using DigitalSignatureApplication.Repository;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.IO;
 using System.Linq;
@@ -98,7 +99,7 @@ namespace DigitalSignatureApplication
                     {
                         if (!string.IsNullOrEmpty(outPath.FirstOrDefault().OutPath))
                         {
-                            Console.WriteLine($"OutPath from DB: {outPath.FirstOrDefault().OutPath}");
+                            Log.Information($"OutPath from DB: {outPath.FirstOrDefault().OutPath}");
                             downloadDir = outPath.FirstOrDefault().OutPath;
                             OutputFolderName = string.Empty;
                         }
@@ -118,6 +119,7 @@ namespace DigitalSignatureApplication
                         WriteSuccessfulFileGeneration(finalPath, FileName);
                     }
                     WriteEachStep("File successfully signed", EachStepLog);
+                    Log.Information("File successfully signed");
 
                     var UpdateView = await dbRepository.UpdateView(SingleReport.DatabaseName, SingleReport.DocNum,
                                 SingleReport.DocType, DownloadFilePath);
@@ -133,6 +135,7 @@ namespace DigitalSignatureApplication
             }
             finally
             {
+                Log.CloseAndFlush();
                 await Task.CompletedTask;
             }
         }
@@ -145,6 +148,7 @@ namespace DigitalSignatureApplication
             try
             {
                 WriteEachStep("Scanning for files in directories", EachStepLog);
+                Log.Information("Scanning for files in directories");
                 folderEntries = Directory.GetDirectories(uploadDir);
                 foreach (string folderName in folderEntries)
                 {
@@ -153,6 +157,7 @@ namespace DigitalSignatureApplication
                     {
                         try
                         {
+                            Log.Information("PDF Files detected, preparing to send them to API");
                             WriteEachStep("PDF Files detected, preparing to send them to API", EachStepLog);
                             try
                             {
@@ -172,6 +177,7 @@ namespace DigitalSignatureApplication
                             OutputFolderName = new DirectoryInfo(folderName).Name;
                             bytes = System.IO.File.ReadAllBytes(pdfFileName);
                             convertedFile = Convert.ToBase64String(bytes);
+                            Log.Information("Converted File to Base64");
                             WriteEachStep("Converted File to Base64", EachStepLog);
                             await ManualSignOperation(pdfFileName, FileName, OutputFolderName);
                         }
@@ -189,6 +195,10 @@ namespace DigitalSignatureApplication
                 {
                     ExceptionGeneration(ex);
                 }
+            } 
+            finally
+            {
+                Log.CloseAndFlush();
             }
         }
 
@@ -214,8 +224,10 @@ namespace DigitalSignatureApplication
                 System.IO.File.Delete(pdfFileName);
                 if (LogFileWriteStatus)
                 {
+                    Log.Information($"File generated succesfully {finalPath} {FileName}");
                     WriteSuccessfulFileGeneration(finalPath, FileName);
                 }
+                Log.Information("File successfully signed - Manual");
                 WriteEachStep("File successfully signed - Manual", EachStepLog);
             }
             catch (Exception ex)
@@ -224,6 +236,10 @@ namespace DigitalSignatureApplication
                 {
                     ExceptionGeneration(ex);
                 }
+            }
+            finally
+            {
+                Log.CloseAndFlush();
             }
         }
 
@@ -234,6 +250,8 @@ namespace DigitalSignatureApplication
             var stringPayload = JsonConvert.SerializeObject(legacyPayload);
             var content = new StringContent(stringPayload, Encoding.UTF8, "application/json");
             request.Content = content;
+            Log.Information("JSON Object serialized and is prepared to be sent");
+            Log.Information(stringPayload);
             WriteEachStep("JSON Object serialized and is prepared to be sent", EachStepLog);
             try
             {
@@ -244,6 +262,7 @@ namespace DigitalSignatureApplication
                 try
                 {
                     DecodedData = JsonConvert.DeserializeObject<DeserializeData>(responseContent);
+                    Log.Information($"Response from API {DecodedData}");
                     if (EachStepLog)
                     {
                         WriteEachStep("Response from API deserialized", EachStepLog);
@@ -287,6 +306,10 @@ namespace DigitalSignatureApplication
                     WriteFailedFile(FileName, ex);
                 }
                 return "BreakCase";
+            } 
+            finally
+            {
+                Log.CloseAndFlush();
             }
         }
         protected virtual bool IsFileLocked(FileInfo file)

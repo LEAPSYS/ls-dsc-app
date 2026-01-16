@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DigitalSignatureApplication.Models
 {
-    public class DSCViewModel
+    public class PendingViewModel
     {
         public string CREXPORT { get; set; }
         public string Type { get; set; }
@@ -18,7 +18,7 @@ namespace DigitalSignatureApplication.Models
         public string CRPath { get; set; }
         public bool DSCShow { get; set; }
         public string AuthorizedSignatory { get; set; }
-        public DSCViewModel()
+        public PendingViewModel()
         {
             CREXPORT = string.Empty;
             Type = string.Empty;

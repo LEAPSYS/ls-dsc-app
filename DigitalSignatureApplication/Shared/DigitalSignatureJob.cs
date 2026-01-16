@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 namespace DigitalSignatureApplication.Shared
 {
     [DisallowConcurrentExecution]
-    public class DSCJob : IJob
+    public class DigitalSignatureJob : IJob
     {
         private readonly Application _app;
-        public DSCJob(Application app)
+        public DigitalSignatureJob(Application app)
         {
             _app = app;
         }

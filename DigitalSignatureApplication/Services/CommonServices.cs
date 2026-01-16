@@ -199,7 +199,6 @@ namespace DigitalSignatureApplication
                     Directory.CreateDirectory(logFolderPath);
                 }
                 string signedReport = Path.Combine(logFolderPath, "Thread ID " + threadId + ".txt");
-                //signedReport = SpLAppendTimeStamp(signedReport);
                 using (StreamWriter writer = new StreamWriter(signedReport, true))
                 {
                     writer.WriteLine("-----------------------------------------------------------------------------");

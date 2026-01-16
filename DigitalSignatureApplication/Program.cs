@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Quartz;
+using Serilog;
 using System;
 
 namespace DigitalSignatureApplication
@@ -18,6 +19,7 @@ namespace DigitalSignatureApplication
         {
             ConfigurationLoad startup = new ConfigurationLoad();
             var builder = Host.CreateApplicationBuilder(args);
+
             builder.Services.AddWindowsService(options =>
             {
                 options.ServiceName = "LS.DSC.Service";
@@ -33,12 +35,19 @@ namespace DigitalSignatureApplication
             builder.Services.AddScoped<Application>();
             builder.Services.AddScoped<CrystalReportService>();
             builder.Services.AddTransient<BulkSigningService>();
-            builder.Services.AddQuartz(q =>
-            q.AddJobAndTrigger<DSCJob>(builder.Configuration)
+            builder.Services.AddQuartz(quartz => quartz.AddJobAndTrigger<DigitalSignatureJob>(builder.Configuration));
+            builder.Services.AddQuartzHostedService(quartz => quartz.WaitForJobsToComplete = true);
+            builder.Logging.AddSerilog(new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .WriteTo.File("logs/Program.log", rollingInterval: RollingInterval.Hour)
+                .CreateLogger()
             );
-            builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+
             var host = builder.Build();
             host.Run();
+            Log.Information("Program Started");
+            Log.CloseAndFlush();
         }
     }
 }

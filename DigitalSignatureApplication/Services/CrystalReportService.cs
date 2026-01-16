@@ -4,6 +4,7 @@ using DigitalSignatureApplication.Config;
 using DigitalSignatureApplication.Models;
 using DigitalSignatureApplication.Repository;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,37 +31,38 @@ namespace DigitalSignatureApplication
             this.serviceProvider = serviceProvider;
             dbRepository = new DbRepository();
         }
-        public async Task<IEnumerable<DSCViewModel>> PopulateView()
+        public async Task<IEnumerable<PendingViewModel>> GetPendingList()
         {
-            IEnumerable<DSCViewModel> VM = new List<DSCViewModel>();
+            IEnumerable<PendingViewModel> pendingList = new List<PendingViewModel>();
             try
             {
-                VM = await dbRepository.PopulateView();
-                return VM;
+                pendingList = await dbRepository.GetPendingFromView();
+                return pendingList;
             }
             catch (Exception ex)
             {
                 if (TurnOnLog)
                     ExceptionGeneration(ex);
-                return VM;
+                return pendingList;
             }
         }
-        async Task<HashSet<GeneratedReportDetails>> GenerateCrystalReport(IEnumerable<DSCViewModel> ViewModel)
+        async Task<HashSet<GeneratedReportDetails>> GenerateCrystalReport(IEnumerable<PendingViewModel> pendingList)
         {
             int threadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
             string ReportExportLocation;
             String DatabaseName, DocNum, Type, FileName, FileNameWithTimeStamp;
-            HashSet<GeneratedReportDetails> ReportList = new HashSet<GeneratedReportDetails>();
+            HashSet<GeneratedReportDetails> generatedReportList = new HashSet<GeneratedReportDetails>();
             List<Task> TaskList = new List<Task>();
             try
             {
-                foreach (var record in ViewModel)
+                foreach (var record in pendingList)
                 {
                     using (ReportDocument crystalReport = new ReportDocument())
                     {
                         try
                         {
                             WriteEachStep("Data exists in data table, generating reports", EachStepLog);
+                            Log.Information("Data exists in data table, generating reports");
                             String Export_Location = record.CREXPORT;
                             if (!Directory.Exists(Export_Location))
                             {
@@ -103,6 +105,7 @@ namespace DigitalSignatureApplication
                         }
                         catch (Exception ex)
                         {
+                            Log.Error(ex.StackTrace ?? "No StackTrace");
                             if (TurnOnLog)
                                 ExceptionGeneration(ex);
                         }
@@ -127,8 +130,9 @@ namespace DigitalSignatureApplication
                 {
                     await tasks;
                 }
+                Log.CloseAndFlush();
             }
-            return ReportList;
+            return generatedReportList;
         }
         private static byte[] ReadFully(Stream input)
         {
@@ -190,12 +194,13 @@ namespace DigitalSignatureApplication
             return sb.ToString();
         }
 
-        public async Task<HashSet<GeneratedReportDetails>> Report()
+        public async Task<HashSet<GeneratedReportDetails>> GetGeneratedReportList()
         {
+            Log.Information("Report Generation Started");
             WriteEachStep("Report Generation Started", EachStepLog);
-            IEnumerable<DSCViewModel> Model = await PopulateView();
-            HashSet<GeneratedReportDetails> ListOfReport = await GenerateCrystalReport(Model);
-            return ListOfReport;
+            IEnumerable<PendingViewModel> pendingList = await GetPendingList();
+            HashSet<GeneratedReportDetails> generatedReportList = await GenerateCrystalReport(pendingList);
+            return generatedReportList;
         }
     }
 }
