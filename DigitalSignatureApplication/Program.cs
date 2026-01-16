@@ -1,17 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+﻿using DigitalSignatureApplication.Config;
+using DigitalSignatureApplication.Models;
+using DigitalSignatureApplication.Shared;
 using Microsoft.Extensions.Configuration;
-using DigitalSignatureApp.Loadout;
-using DigitalSignatureApp.Models;
-using DigitalSignatureApp;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Quartz;
+using System;
 
 namespace DigitalSignatureApplication
 {
@@ -26,9 +20,9 @@ namespace DigitalSignatureApplication
             var builder = Host.CreateApplicationBuilder(args);
             builder.Services.AddWindowsService(options =>
             {
-                options.ServiceName = "LS DSC Service";
+                options.ServiceName = "LS.DSC.Service";
             });
-            ConfigStore.DSCInfoAndAPI = builder.Configuration.GetSection("Credentials").Get<DSCInfoAndAPI>();
+            ConfigStore.LegacyPayload = builder.Configuration.GetSection("LegacyPayload").Get<LegacyPayload>();
             ConfigStore.ApiConfig = builder.Configuration.GetSection("ApiConfig").Get<ApiConfig>();
             builder.Services.AddHttpClient("signingAPI", (ServiceProvider, httpClient) =>
             {
