@@ -9,9 +9,10 @@ namespace DigitalSignatureApplication.Shared
     {
         private readonly Application _app;
         private readonly ILogger<DigitalSignatureJob> _logger;
-        public DigitalSignatureJob(Application app)
+        public DigitalSignatureJob(Application app, ILogger<DigitalSignatureJob> logger)
         {
-            _app = app;
+            this._logger = logger;
+            this._app = app;
         }
         public async Task Execute(IJobExecutionContext context)
         {

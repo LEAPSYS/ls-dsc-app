@@ -21,7 +21,6 @@ namespace DigitalSignatureApplication
         private static readonly bool _enableExLog, _enableFileLog, _enableStepLog;
         private GeneratedReportDetails _generatedReport;
         private DbRepository _repository;
-        private readonly ILogger<BulkSigningService> _logger;
         private readonly HttpClient _httpClient;
 
         static BulkSigningService()
