@@ -1,6 +1,7 @@
 ﻿using DigitalSignatureApplication.Config;
 using DigitalSignatureApplication.Models;
 using DigitalSignatureApplication.Repository;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
 using System;
@@ -15,30 +16,32 @@ namespace DigitalSignatureApplication
 
     public class BulkSigningService : CommonServices
     {
-        private LegacyPayload legacyPayload;
-        private static readonly ApiConfig ApiConfiguration;
-        private static readonly bool TurnOnLog, LogFileWriteStatus, EachStepLog;
-        private GeneratedReportDetails SingleReport;
-        private DbRepository dbRepository;
+        private LegacyPayload _legacyPayload;
+        private static readonly ApiConfig _apiConfig;
+        private static readonly bool _enableExLog, _enableFileLog, _enableStepLog;
+        private GeneratedReportDetails _generatedReport;
+        private DbRepository _repository;
+        private readonly ILogger<BulkSigningService> _logger;
+        private readonly HttpClient _httpClient;
+
         static BulkSigningService()
         {
-            ApiConfiguration = ConfigStore.ApiConfig;
-            TurnOnLog = ConfigStore.CommonServices.TurnOnExceptionLog;
-            LogFileWriteStatus = ConfigStore.CommonServices.WriteAtEverySuccessOrFail;
-            EachStepLog = ConfigStore.CommonServices.StepByStepEvaluation;
+            _apiConfig = ConfigStore.ApiConfig;
+            _enableExLog = ConfigStore.CommonServices.TurnOnExceptionLog;
+            _enableFileLog = ConfigStore.CommonServices.WriteAtEverySuccessOrFail;
+            _enableStepLog = ConfigStore.CommonServices.StepByStepEvaluation;
         }
-        private readonly HttpClient client;
         public BulkSigningService(IHttpClientFactory httpClientFactory)
         {
-            client = httpClientFactory.CreateClient("signingAPI");
-            legacyPayload = ConfigStore.LegacyPayload;
-            dbRepository = new DbRepository();
+            _httpClient = httpClientFactory.CreateClient("signingAPI");
+            _legacyPayload = ConfigStore.LegacyPayload;
+            _repository = new DbRepository();
         }
-        public void SetReportDetails(GeneratedReportDetails reportDetails)
+        public void SetGeneratedReport(GeneratedReportDetails generatedReport)
         {
-            SingleReport = reportDetails;
-            legacyPayload = ConfigStore.LegacyPayload;
-            dbRepository = new DbRepository();
+            _generatedReport = generatedReport;
+            _legacyPayload = ConfigStore.LegacyPayload;
+            _repository = new DbRepository();
         }
         public async Task SeperateThreadDSC()
         {
@@ -47,17 +50,17 @@ namespace DigitalSignatureApplication
             Byte[] bytes_returned;
             try
             {
-                legacyPayload.AuthorizedSignatory = SingleReport.AuthCompany;
-                FileName = SingleReport.FileName;
-                OnlyFileName = Path.GetFileNameWithoutExtension(SingleReport.ReportPath);
-                convertedFile = Convert.ToBase64String(SingleReport.PDFInBytes);
-                OutputFolderName = string.Concat(SingleReport.DatabaseName, "#", SingleReport.AuthCompany, "#", SingleReport.SignerName);
+                _legacyPayload.AuthorizedSignatory = _generatedReport.AuthCompany;
+                FileName = _generatedReport.FileName;
+                OnlyFileName = Path.GetFileNameWithoutExtension(_generatedReport.ReportPath);
+                convertedFile = Convert.ToBase64String(_generatedReport.PDFInBytes);
+                OutputFolderName = string.Concat(_generatedReport.DatabaseName, "#", _generatedReport.AuthCompany, "#", _generatedReport.SignerName);
 
                 try
                 {
-                    if (string.IsNullOrEmpty(SingleReport.SignerName))
+                    if (string.IsNullOrEmpty(_generatedReport.SignerName))
                     {
-                        var GetSigner = await dbRepository.GetSignerList(SingleReport.DocEntry, SingleReport.DocType);
+                        var GetSigner = await _repository.GetSignerList(_generatedReport.DocEntry, _generatedReport.DocType);
                         var GetSignerList = GetSigner.ToList();
                         if (GetSignerList.Count == 0)
                             throw new NullReferenceException("Signer list was not found for " + FileName);
@@ -67,10 +70,10 @@ namespace DigitalSignatureApplication
                             {
                                 if (String.IsNullOrEmpty(signer.SignerName))
                                     continue;
-                                legacyPayload.SignerName = signer.SignerName;
-                                legacyPayload.FindAuth = signer.SignerTextSearch;
-                                legacyPayload.TopLeft = signer.TopLeft;
-                                legacyPayload.pdfByte1 = convertedFile;
+                                _legacyPayload.SignerName = signer.SignerName;
+                                _legacyPayload.FindAuth = signer.SignerTextSearch;
+                                _legacyPayload.TopLeft = signer.TopLeft;
+                                _legacyPayload.pdfByte1 = convertedFile;
                                 convertedFile = await SignDocument(FileName);
                                 if (String.Equals(convertedFile, "BreakCase"))
                                     break;
@@ -85,15 +88,15 @@ namespace DigitalSignatureApplication
                     }
                     else
                     {
-                        legacyPayload.SignerName = SingleReport.SignerName;
-                        legacyPayload.pdfByte1 = convertedFile;
+                        _legacyPayload.SignerName = _generatedReport.SignerName;
+                        _legacyPayload.pdfByte1 = convertedFile;
                         convertedFile = await SignDocument(FileName);
                         if (String.Equals(convertedFile, "BreakCase"))
                             return;
                     }
-                    string downloadDir = ApiConfiguration.DSCOutLocation;
+                    string downloadDir = _apiConfig.DSCOutLocation;
 
-                    var outPath = await dbRepository.GetOutPath(SingleReport.DocNum, SingleReport.DocType, SingleReport.DatabaseName);
+                    var outPath = await _repository.GetOutPath(_generatedReport.DocNum, _generatedReport.DocType, _generatedReport.DatabaseName);
 
                     try
                     {
@@ -114,15 +117,15 @@ namespace DigitalSignatureApplication
                     DownloadFilePath = Path.Combine(finalPath, FileName);
                     bytes_returned = Convert.FromBase64String(convertedFile);
                     System.IO.File.WriteAllBytes(DownloadFilePath, bytes_returned);
-                    if (LogFileWriteStatus)
+                    if (_enableFileLog)
                     {
                         WriteSuccessfulFileGeneration(finalPath, FileName);
                     }
-                    WriteEachStep("File successfully signed", EachStepLog);
+                    WriteEachStep("File successfully signed", _enableStepLog);
                     Log.Information("File successfully signed");
 
-                    var UpdateView = await dbRepository.UpdateView(SingleReport.DatabaseName, SingleReport.DocNum,
-                                SingleReport.DocType, DownloadFilePath);
+                    var UpdateView = await _repository.UpdateView(_generatedReport.DatabaseName, _generatedReport.DocNum,
+                                _generatedReport.DocType, DownloadFilePath);
                 }
                 catch (Exception ex)
                 {
@@ -142,12 +145,12 @@ namespace DigitalSignatureApplication
         public async Task ManualDSC()
         {
             string FileName, OnlyFileName, OutputFolderName, DatabaseName;
-            string uploadDir = ApiConfiguration.DSCInLocation, convertedFile;
+            string uploadDir = _apiConfig.DSCInLocation, convertedFile;
             string[] pdfFileEntries, folderEntries, SplitFolderName;
             Byte[] bytes;
             try
             {
-                WriteEachStep("Scanning for files in directories", EachStepLog);
+                WriteEachStep("Scanning for files in directories", _enableStepLog);
                 Log.Information("Scanning for files in directories");
                 folderEntries = Directory.GetDirectories(uploadDir);
                 foreach (string folderName in folderEntries)
@@ -158,13 +161,13 @@ namespace DigitalSignatureApplication
                         try
                         {
                             Log.Information("PDF Files detected, preparing to send them to API");
-                            WriteEachStep("PDF Files detected, preparing to send them to API", EachStepLog);
+                            WriteEachStep("PDF Files detected, preparing to send them to API", _enableStepLog);
                             try
                             {
                                 SplitFolderName = folderName.Split('#');
                                 DatabaseName = new DirectoryInfo(SplitFolderName[0]).Name;
-                                legacyPayload.AuthorizedSignatory = SplitFolderName[1];
-                                legacyPayload.SignerName = SplitFolderName[2];
+                                _legacyPayload.AuthorizedSignatory = SplitFolderName[1];
+                                _legacyPayload.SignerName = SplitFolderName[2];
                             }
                             catch (Exception ex)
                             {
@@ -178,7 +181,7 @@ namespace DigitalSignatureApplication
                             bytes = System.IO.File.ReadAllBytes(pdfFileName);
                             convertedFile = Convert.ToBase64String(bytes);
                             Log.Information("Converted File to Base64");
-                            WriteEachStep("Converted File to Base64", EachStepLog);
+                            WriteEachStep("Converted File to Base64", _enableStepLog);
                             await ManualSignOperation(pdfFileName, FileName, OutputFolderName);
                         }
                         catch (Exception ex)
@@ -191,7 +194,7 @@ namespace DigitalSignatureApplication
             }
             catch (Exception ex)
             {
-                if (TurnOnLog)
+                if (_enableExLog)
                 {
                     ExceptionGeneration(ex);
                 }
@@ -210,11 +213,11 @@ namespace DigitalSignatureApplication
                 string convertedFile, PDFinBase64, DownloadFilePath;
                 bytes = System.IO.File.ReadAllBytes(pdfFileName);
                 convertedFile = Convert.ToBase64String(bytes);
-                legacyPayload.pdfByte1 = convertedFile;
+                _legacyPayload.pdfByte1 = convertedFile;
                 PDFinBase64 = await SignDocument(FileName);
                 if (String.Equals(PDFinBase64, "BreakCase"))
                     return;
-                string downloadDir = ApiConfiguration.DSCOutLocation;
+                string downloadDir = _apiConfig.DSCOutLocation;
                 string finalPath = Path.Combine(downloadDir, OutputFolderName);
                 if (!Directory.Exists(finalPath))
                     Directory.CreateDirectory(finalPath);
@@ -222,17 +225,17 @@ namespace DigitalSignatureApplication
                 bytes_returned = Convert.FromBase64String(PDFinBase64);
                 System.IO.File.WriteAllBytes(DownloadFilePath, bytes_returned);
                 System.IO.File.Delete(pdfFileName);
-                if (LogFileWriteStatus)
+                if (_enableFileLog)
                 {
                     Log.Information($"File generated succesfully {finalPath} {FileName}");
                     WriteSuccessfulFileGeneration(finalPath, FileName);
                 }
                 Log.Information("File successfully signed - Manual");
-                WriteEachStep("File successfully signed - Manual", EachStepLog);
+                WriteEachStep("File successfully signed - Manual", _enableStepLog);
             }
             catch (Exception ex)
             {
-                if (TurnOnLog)
+                if (_enableExLog)
                 {
                     ExceptionGeneration(ex);
                 }
@@ -245,17 +248,58 @@ namespace DigitalSignatureApplication
 
         private async Task<string> SignDocument(string FileName)
         {
-            HttpRequestMessage request;
-            request = new HttpRequestMessage(HttpMethod.Post, "");
-            var stringPayload = JsonConvert.SerializeObject(legacyPayload);
-            var content = new StringContent(stringPayload, Encoding.UTF8, "application/json");
-            request.Content = content;
+            if (_apiConfig.UsePayloadV3)
+            {
+                var payloadV3 = new PayloadV3();
+                payloadV3.b64Pdf = _legacyPayload.pdfByte1;
+                payloadV3.authorityName = _legacyPayload.SignerName;
+                payloadV3.orgCode = _legacyPayload.AuthorizedSignatory;
+                payloadV3.pages = new int[] { 0 };
+                payloadV3.placeholderText = _legacyPayload.FindAuth;
+                payloadV3.signedQrText = _generatedReport.SignedQrText;
+                payloadV3.url = false;
+                payloadV3.xAxisOffset = 0;
+                payloadV3.yAxisOffset = 0;
+                var payloadV3String = JsonConvert.SerializeObject(payloadV3);
+                var contentV3 = new StringContent(payloadV3String, Encoding.UTF8, "application/json");
+                var responseV3 = await _httpClient.PostAsync("api/digi-sign/v3/do-digi-signing", contentV3);
+                responseV3.EnsureSuccessStatusCode();
+                DigiSignResponse digiSignResponse = new DigiSignResponse();
+                var responseV3Content = await responseV3.Content.ReadAsStringAsync();
+                try
+                {
+                    digiSignResponse = JsonConvert.DeserializeObject<DigiSignResponse>(responseV3Content);
+                    Log.Information($"Response from API {digiSignResponse}");
+                    if (_enableStepLog)
+                    {
+                        WriteEachStep("Response from API deserialized", _enableStepLog);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (_enableExLog)
+                    {
+                        ExceptionGeneration(ex);
+                        WritePayload(responseV3Content, FileName);
+                    }
+                }
+                if (string.IsNullOrEmpty(digiSignResponse.b64Signed))
+                {
+                    return "BreakCase";
+                }
+                else
+                {
+                    return digiSignResponse.b64Signed;
+                }
+            }
+            var legacyPayloadString = JsonConvert.SerializeObject(_legacyPayload);
+            var content = new StringContent(legacyPayloadString, Encoding.UTF8, "application/json");
             Log.Information("JSON Object serialized and is prepared to be sent");
-            Log.Information(stringPayload);
-            WriteEachStep("JSON Object serialized and is prepared to be sent", EachStepLog);
+            Log.Information(legacyPayloadString);
+            WriteEachStep("JSON Object serialized and is prepared to be sent", _enableStepLog);
             try
             {
-                var response = await client.SendAsync(request);
+                var response = await _httpClient.PostAsync("api/digi-sign/v1/do-digi-signing-legacy", content);
                 response.EnsureSuccessStatusCode();
                 DeserializeData DecodedData = new DeserializeData();
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -263,9 +307,9 @@ namespace DigitalSignatureApplication
                 {
                     DecodedData = JsonConvert.DeserializeObject<DeserializeData>(responseContent);
                     Log.Information($"Response from API {DecodedData}");
-                    if (EachStepLog)
+                    if (_enableStepLog)
                     {
-                        WriteEachStep("Response from API deserialized", EachStepLog);
+                        WriteEachStep("Response from API deserialized", _enableStepLog);
                     }
                 }
                 catch (Exception ex)
@@ -273,7 +317,7 @@ namespace DigitalSignatureApplication
                     DecodedData.error = "exception";
                     DecodedData.file = "exception";
                     DecodedData.status = "exception";
-                    if (TurnOnLog)
+                    if (_enableExLog)
                     {
                         ExceptionGeneration(ex);
                         WritePayload(responseContent, FileName);
@@ -286,7 +330,7 @@ namespace DigitalSignatureApplication
                 }
                 else
                 {
-                    if (LogFileWriteStatus)
+                    if (_enableFileLog)
                     {
                         WriteFailedFile(FileName, new InvalidDataException(DecodedData.error));
                     }
@@ -297,11 +341,11 @@ namespace DigitalSignatureApplication
             }
             catch (Exception ex)
             {
-                if (TurnOnLog)
+                if (_enableExLog)
                 {
                     ExceptionGeneration(ex);
                 }
-                if (LogFileWriteStatus)
+                if (_enableFileLog)
                 {
                     WriteFailedFile(FileName, ex);
                 }

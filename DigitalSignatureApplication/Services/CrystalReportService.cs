@@ -93,11 +93,11 @@ namespace DigitalSignatureApplication
                             string SignerName = record.Auth_Signatory;
                             var PDFFileStream = crystalReport.ExportToStream(ExportFormatType.PortableDocFormat);
                             var PDFInbytes = ReadFully(PDFFileStream);
-                            GeneratedReportDetails reportDetails = new GeneratedReportDetails(PDFInbytes, FileNameWithTimeStamp, record.TBName,
+                            GeneratedReportDetails generatedReport = new GeneratedReportDetails(PDFInbytes, FileNameWithTimeStamp, record.TBName,
                                 record.Type, record.AuthorizedSignatory, record.Auth_Signatory, record.DocNum, record.Database, record.DocEntry,
-                                record.DSCShow);
+                                record.DSCShow, record.SignedQrText);
                             var bulkSigningService = serviceProvider.GetRequiredService<BulkSigningService>();
-                            bulkSigningService.SetReportDetails(reportDetails);
+                            bulkSigningService.SetGeneratedReport(generatedReport);
                             var task = Task.Run(() => bulkSigningService.SeperateThreadDSC());
                             TaskList.Add(task);
                             if (GenerateSeparatePDF)

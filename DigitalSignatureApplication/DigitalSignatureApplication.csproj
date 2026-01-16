@@ -343,6 +343,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\ApiConfig.cs" />
+    <Compile Include="Models\DigiSignResponse.cs" />
+    <Compile Include="Models\PayloadV3.cs" />
     <Compile Include="Shared\Application.cs" />
     <Compile Include="Services\BulkSigningService.cs" />
     <Compile Include="Services\CommonServices.cs" />

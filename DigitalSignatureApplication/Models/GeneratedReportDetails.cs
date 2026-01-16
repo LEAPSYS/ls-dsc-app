@@ -10,7 +10,7 @@ namespace DigitalSignatureApplication.Models
     {
         public GeneratedReportDetails(byte[] PDFInBytes, string FileName, string DocumentTableName, string DocType,
             string AuthCompany, string signerName, string DocNum, string DatabaseName, string DocEntry, bool DSCShow = true,
-            string reportPath = null, string OutputFolderName = null)
+            string reportPath = null, string OutputFolderName = null, string SignedQrText = null)
         {
             this.PDFInBytes = PDFInBytes;
             this.FileName = FileName;
@@ -24,6 +24,7 @@ namespace DigitalSignatureApplication.Models
             this.DocEntry = DocEntry;
             ReportPath = reportPath;
             this.OutputFolderName = OutputFolderName;
+            this.SignedQrText = SignedQrText;
         }
         public byte[] PDFInBytes { get; set; }
         public string FileName { get; set; }
@@ -37,5 +38,6 @@ namespace DigitalSignatureApplication.Models
         public bool DSCShow { get; set; }
         public string ReportPath { get; set; }
         public string OutputFolderName { get; set; }
+        public string SignedQrText { get; set; }
     }
 }

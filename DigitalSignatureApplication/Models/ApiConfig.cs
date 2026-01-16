@@ -12,5 +12,6 @@ namespace DigitalSignatureApplication.Models
         public string Auth { get; set; }
         public string DSCInLocation { get; set; }
         public string DSCOutLocation { get; set; }
+        public bool UsePayloadV3 { get; set; }
     }
 }

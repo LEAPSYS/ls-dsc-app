@@ -18,6 +18,7 @@ namespace DigitalSignatureApplication.Models
         public string CRPath { get; set; }
         public bool DSCShow { get; set; }
         public string AuthorizedSignatory { get; set; }
+        public string SignedQrText { get; set; }
         public PendingViewModel()
         {
             CREXPORT = string.Empty;
@@ -29,6 +30,7 @@ namespace DigitalSignatureApplication.Models
             Auth_Signatory = string.Empty;
             CRPath = string.Empty;
             AuthorizedSignatory = string.Empty;
+            SignedQrText = string.Empty;
         }
 
     }
