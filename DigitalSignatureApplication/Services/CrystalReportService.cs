@@ -1,8 +1,8 @@
 ﻿using CrystalDecisions.CrystalReports.Engine;
 using CrystalDecisions.Shared;
 using DigitalSignatureApplication.Config;
-using DigitalSignatureApplication.DSCRepository;
 using DigitalSignatureApplication.Models;
+using DigitalSignatureApplication.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -12,12 +12,12 @@ using System.Threading.Tasks;
 
 namespace DigitalSignatureApplication
 {
-    public class CrystalReport : CommonServices
+    public class CrystalReportService : CommonServices
     {
         private static readonly ConnectionAndReportDetails DataSourceCredentials = new ConnectionAndReportDetails();
         private static readonly bool TurnOnLog, EachStepLog, GenerateSeparatePDF;
-        private readonly IDSCRepository _IDSCRepository;
-        static CrystalReport()
+        private readonly DbRepository dbRepository;
+        static CrystalReportService()
         {
             DataSourceCredentials = ConfigStore.ConnectionAndReportDetails;
             TurnOnLog = ConfigStore.CommonServices.TurnOnExceptionLog;
@@ -25,17 +25,17 @@ namespace DigitalSignatureApplication
             GenerateSeparatePDF = ConfigStore.CommonServices.ReportGenerationSettings.DSCService;
         }
         private readonly IServiceProvider serviceProvider;
-        public CrystalReport(IServiceProvider serviceProvider)
+        public CrystalReportService(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
-            _IDSCRepository = new DigitalSignatureRepository();
+            dbRepository = new DbRepository();
         }
         public async Task<IEnumerable<DSCViewModel>> PopulateView()
         {
             IEnumerable<DSCViewModel> VM = new List<DSCViewModel>();
             try
             {
-                VM = await _IDSCRepository.PopulateView();
+                VM = await dbRepository.PopulateView();
                 return VM;
             }
             catch (Exception ex)
@@ -91,13 +91,12 @@ namespace DigitalSignatureApplication
                             string SignerName = record.Auth_Signatory;
                             var PDFFileStream = crystalReport.ExportToStream(ExportFormatType.PortableDocFormat);
                             var PDFInbytes = ReadFully(PDFFileStream);
-                            GeneratedReportDetails reportDetails = new GeneratedReportDetails(PDFInbytes, FileNameWithTimeStamp, record.TBName, 
+                            GeneratedReportDetails reportDetails = new GeneratedReportDetails(PDFInbytes, FileNameWithTimeStamp, record.TBName,
                                 record.Type, record.AuthorizedSignatory, record.Auth_Signatory, record.DocNum, record.Database, record.DocEntry,
                                 record.DSCShow);
-                            //BulkDSC _SignProcess = new BulkDSC(reportDetails);
-                            var bulkDSC = serviceProvider.GetRequiredService<BulkDSC>();
-                            bulkDSC.SetReportDetails(reportDetails);
-                            var task = Task.Run(() => bulkDSC.SeperateThreadDSC());
+                            var bulkSigningService = serviceProvider.GetRequiredService<BulkSigningService>();
+                            bulkSigningService.SetReportDetails(reportDetails);
+                            var task = Task.Run(() => bulkSigningService.SeperateThreadDSC());
                             TaskList.Add(task);
                             if (GenerateSeparatePDF)
                                 crystalReport.Export();
@@ -124,7 +123,7 @@ namespace DigitalSignatureApplication
             }
             finally
             {
-                foreach(var tasks in TaskList)
+                foreach (var tasks in TaskList)
                 {
                     await tasks;
                 }
@@ -143,13 +142,9 @@ namespace DigitalSignatureApplication
         {
             ReportDocument crSubreportDocument;
             Database oCRDb = rpt.Database;
-
             Tables oCRTables = oCRDb.Tables;
-
             CrystalDecisions.CrystalReports.Engine.Table oCRTable = default(CrystalDecisions.CrystalReports.Engine.Table);
-
             TableLogOnInfo oCRTableLogonInfo = default(CrystalDecisions.Shared.TableLogOnInfo);
-
             ConnectionInfo oCRConnectionInfo = new CrystalDecisions.Shared.ConnectionInfo();
 
             oCRConnectionInfo.ServerName = DataSourceCredentials.loginDetails.ServerName;
@@ -181,6 +176,7 @@ namespace DigitalSignatureApplication
             rpt.Refresh();
             return rpt;
         }
+
         public static string RemoveSpecialCharacters(string str)
         {
             StringBuilder sb = new StringBuilder();
@@ -193,6 +189,7 @@ namespace DigitalSignatureApplication
             }
             return sb.ToString();
         }
+
         public async Task<HashSet<GeneratedReportDetails>> Report()
         {
             WriteEachStep("Report Generation Started", EachStepLog);

@@ -326,15 +326,14 @@
   <ItemGroup>
     <Compile Include="Models\ApiConfig.cs" />
     <Compile Include="Shared\Application.cs" />
-    <Compile Include="Services\BulkDSC.cs" />
+    <Compile Include="Services\BulkSigningService.cs" />
     <Compile Include="Services\CommonServices.cs" />
     <Compile Include="Config\ConfigStore.cs" />
     <Compile Include="Config\ConfigurationLoad.cs" />
-    <Compile Include="Services\CrystalReport.cs" />
+    <Compile Include="Services\CrystalReportService.cs" />
     <Compile Include="Shared\DapperContext.cs" />
     <Compile Include="Shared\DSCJob.cs" />
-    <Compile Include="Repository\DSCRepository.cs" />
-    <Compile Include="Repository\IDSCRepository.cs" />
+    <Compile Include="Repository\DbRepository.cs" />
     <Compile Include="Models\CommonService.cs" />
     <Compile Include="Models\ConnectionAndReportDetails.cs" />
     <Compile Include="Models\DeserializeData.cs" />

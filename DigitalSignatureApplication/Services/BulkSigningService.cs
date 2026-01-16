@@ -1,6 +1,6 @@
 ﻿using DigitalSignatureApplication.Config;
-using DigitalSignatureApplication.DSCRepository;
 using DigitalSignatureApplication.Models;
+using DigitalSignatureApplication.Repository;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 namespace DigitalSignatureApplication
 {
 
-    public class BulkDSC : CommonServices
+    public class BulkSigningService : CommonServices
     {
         private LegacyPayload legacyPayload;
         private static readonly ApiConfig ApiConfiguration;
         private static readonly bool TurnOnLog, LogFileWriteStatus, EachStepLog;
         private GeneratedReportDetails SingleReport;
-        private IDSCRepository _IDSCRepository;
-        static BulkDSC()
+        private DbRepository dbRepository;
+        static BulkSigningService()
         {
             ApiConfiguration = ConfigStore.ApiConfig;
             TurnOnLog = ConfigStore.CommonServices.TurnOnExceptionLog;
@@ -27,17 +27,17 @@ namespace DigitalSignatureApplication
             EachStepLog = ConfigStore.CommonServices.StepByStepEvaluation;
         }
         private readonly HttpClient client;
-        public BulkDSC(IHttpClientFactory httpClientFactory)
+        public BulkSigningService(IHttpClientFactory httpClientFactory)
         {
             client = httpClientFactory.CreateClient("signingAPI");
             legacyPayload = ConfigStore.LegacyPayload;
-            _IDSCRepository = new DigitalSignatureRepository();
+            dbRepository = new DbRepository();
         }
         public void SetReportDetails(GeneratedReportDetails reportDetails)
         {
             SingleReport = reportDetails;
             legacyPayload = ConfigStore.LegacyPayload;
-            _IDSCRepository = new DigitalSignatureRepository();
+            dbRepository = new DbRepository();
         }
         public async Task SeperateThreadDSC()
         {
@@ -56,7 +56,7 @@ namespace DigitalSignatureApplication
                 {
                     if (string.IsNullOrEmpty(SingleReport.SignerName))
                     {
-                        var GetSigner = await _IDSCRepository.GetSignerList(SingleReport.DocEntry, SingleReport.DocType);
+                        var GetSigner = await dbRepository.GetSignerList(SingleReport.DocEntry, SingleReport.DocType);
                         var GetSignerList = GetSigner.ToList();
                         if (GetSignerList.Count == 0)
                             throw new NullReferenceException("Signer list was not found for " + FileName);
@@ -92,7 +92,7 @@ namespace DigitalSignatureApplication
                     }
                     string downloadDir = ApiConfiguration.DSCOutLocation;
 
-                    var outPath = await _IDSCRepository.GetOutPath(SingleReport.DocNum, SingleReport.DocType, SingleReport.DatabaseName);
+                    var outPath = await dbRepository.GetOutPath(SingleReport.DocNum, SingleReport.DocType, SingleReport.DatabaseName);
 
                     try
                     {
@@ -119,7 +119,7 @@ namespace DigitalSignatureApplication
                     }
                     WriteEachStep("File successfully signed", EachStepLog);
 
-                    var UpdateView = await _IDSCRepository.UpdateView(SingleReport.DatabaseName, SingleReport.DocNum,
+                    var UpdateView = await dbRepository.UpdateView(SingleReport.DatabaseName, SingleReport.DocNum,
                                 SingleReport.DocType, DownloadFilePath);
                 }
                 catch (Exception ex)

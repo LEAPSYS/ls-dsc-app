@@ -31,15 +31,14 @@ namespace DigitalSignatureApplication
                 httpClient.BaseAddress = new Uri(ConfigStore.ApiConfig.Url);
             });
             builder.Services.AddScoped<Application>();
-            builder.Services.AddScoped<CrystalReport>();
-            builder.Services.AddTransient<BulkDSC>();
+            builder.Services.AddScoped<CrystalReportService>();
+            builder.Services.AddTransient<BulkSigningService>();
             builder.Services.AddQuartz(q =>
             q.AddJobAndTrigger<DSCJob>(builder.Configuration)
             );
             builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
             var host = builder.Build();
             host.Run();
-           
         }
     }
 }

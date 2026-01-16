@@ -6,9 +6,9 @@ namespace DigitalSignatureApplication.Shared
 {
     public class Application
     {
-        private readonly BulkDSC bulkDSC;
-        private readonly CrystalReport crystalReport;
-        public Application(BulkDSC bulkDSC, CrystalReport NewReport)
+        private readonly BulkSigningService bulkDSC;
+        private readonly CrystalReportService crystalReport;
+        public Application(BulkSigningService bulkDSC, CrystalReportService NewReport)
         {
             crystalReport = NewReport;
             this.bulkDSC = bulkDSC;

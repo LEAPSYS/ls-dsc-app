@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace DigitalSignatureApplication.DSCRepository
+namespace DigitalSignatureApplication.Repository
 {
-    public class DigitalSignatureRepository : IDSCRepository
+    public class DbRepository
     {
         private readonly DapperContext _context;
         private readonly string _spQuery;
 
-        public DigitalSignatureRepository()
+        public DbRepository()
         {
             _context = new DapperContext();
             _spQuery = "DSC_SP";

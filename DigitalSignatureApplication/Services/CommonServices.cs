@@ -9,7 +9,7 @@ namespace DigitalSignatureApplication
         protected static void ExceptionGeneration(Exception ex)
         {
             try
-             { 
+            {
                 DateTime date = DateTime.Now.Date;
                 string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
                 string strWorkPath = System.IO.Path.GetDirectoryName(strExeFilePath);
@@ -42,7 +42,7 @@ namespace DigitalSignatureApplication
 
             }
         }
-        
+
         protected static void GeneratedPayloadFromVM<T>(T model) where T : class
         {
             try
