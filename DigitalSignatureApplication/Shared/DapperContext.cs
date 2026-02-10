@@ -1,5 +1,6 @@
 ﻿using DigitalSignatureApplication.Config;
 using Oracle.ManagedDataAccess.Client;
+using Sap.Data.Hana;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -59,8 +60,8 @@ namespace DigitalSignatureApplication.Shared
         {
             if (Type == ConnectionType.Sql)
                 return new SqlConnection(ConnectionString);
-            //else if (Type == ConnectionType.Hana)
-            //    return new HanaConnection(ConnectionString);
+            else if (Type == ConnectionType.Hana)
+                return new HanaConnection(ConnectionString);
             else if (Type == ConnectionType.Oracle)
                 return new OracleConnection(ConnectionString);
             else throw new Exception("Invalid Data Connection Type");
