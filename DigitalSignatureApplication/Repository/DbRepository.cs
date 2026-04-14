@@ -15,7 +15,7 @@ namespace DigitalSignatureApplication.Repository
         public DbRepository()
         {
             _context = new DapperContext();
-            _spQuery = "MTA_LIVE_06012026.DSC_SP";
+            _spQuery = "DSC_SP";
         }
         public async Task<IEnumerable<PendingViewModel>> GetPendingFromView()
         {

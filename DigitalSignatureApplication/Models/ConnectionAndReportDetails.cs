@@ -20,7 +20,6 @@ namespace DigitalSignatureApplication.Models
     public class LoginDetails
     {
         public string ServerName { get; set; }
-        public string DatabaseName { get; set; }
         public string userId { get; set; }
         public string password { get; set; }
     }

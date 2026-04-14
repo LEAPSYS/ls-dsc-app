@@ -5,7 +5,6 @@
       "providerName": "FIELD NOT IN USE"
     },
     "LoginDetails": {
-      "DatabaseName": "FIELD NOT IN USE",
       "password": "KS@2023",
       "ServerName": "10.10.33.35\\KS",
       "userId": "sa"
